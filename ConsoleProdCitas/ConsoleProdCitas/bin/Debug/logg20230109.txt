@@ -1,0 +1,9 @@
+2023-01-09 12:22:07.043 -06:00 [INF] inicio llamado servicio web
+2023-01-09 12:22:08.208 -06:00 [DBG] Resultado llamado2331494
+2023-01-09 12:22:08.218 -06:00 [INF] fin llamado servicio web
+2023-01-09 12:22:26.644 -06:00 [INF] inicio llamado servicio web
+2023-01-09 12:22:27.027 -06:00 [DBG] Resultado llamado2331494
+2023-01-09 12:22:27.035 -06:00 [INF] fin llamado servicio web
+2023-01-09 12:23:27.810 -06:00 [INF] inicio llamado servicio web
+2023-01-09 12:23:28.337 -06:00 [DBG] Resultado llamado=2331497
+2023-01-09 12:23:28.345 -06:00 [INF] fin llamado servicio web

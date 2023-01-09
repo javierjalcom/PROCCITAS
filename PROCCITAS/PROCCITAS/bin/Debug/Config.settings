@@ -1,0 +1,21 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="PROCCITAS" GeneratedClassName="Config">
+  <Profiles />
+  <Settings>
+    <Setting Name="connection" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">Provider=Sybase.ASEOLEDBProvider;Server Name=DESKTOP-UHP2JSC, 5000;Initial Catalog=dbCalathus;User Id=sa;Password=;charset=iso_1</Value>
+    </Setting>
+    <Setting Name="datetest" Type="System.String" Scope="Application">
+      <Value Profile="(Default)">0</Value>
+    </Setting>
+    <Setting Name="intQtyPerHour" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">17</Value>
+    </Setting>
+    <Setting Name="intQtyCrane" Type="System.Int32" Scope="Application">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="Valor" Type="System.String" Scope="Application">
+      <Value Profile="(Default)" />
+    </Setting>
+  </Settings>
+</SettingsFile>

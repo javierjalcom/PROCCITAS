@@ -1,0 +1,15 @@
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\ConsoleProdCitas.exe.config
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\ConsoleProdCitas.exe
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\ConsoleProdCitas.pdb
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\obj\Debug\ConsoleProdCitas.csprojAssemblyReference.cache
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\obj\Debug\ConsoleProdCitas.csproj.CoreCompileInputs.cache
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\obj\Debug\ConsoleProdCitas.exe
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\obj\Debug\ConsoleProdCitas.pdb
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.dll
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.Sinks.Console.dll
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.Sinks.File.dll
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.xml
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.Sinks.Console.xml
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.Sinks.File.pdb
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\bin\Debug\Serilog.Sinks.File.xml
+D:\JCADENA\JALCOM\CODE\PROCCITAS\ConsoleProdCitas\ConsoleProdCitas\obj\Debug\ConsoleProdCitas.csproj.CopyComplete
