@@ -95,7 +95,7 @@ AS
         
   -- fin en texto  
     DECLARE @lstr_endTime varchar(10)
-    SET  @lstr_endTime = '15:30'
+    SET  @lstr_endTime = '15:00'
 
   -- fecha y hora inicio
     DECLARE @ldtm_StartTime datetime
@@ -105,7 +105,7 @@ AS
     
    -- valore de incremento 
     DECLARE @lint_minute_increase INT
-    SET  @lint_minute_increase = 30
+    SET  @lint_minute_increase = 60
   
   -- fecha, hora de inicio
     DECLARE @dtm_back_StartDateTime DATETIME
@@ -124,6 +124,13 @@ AS
    DECLARE @lint_limit_Counter
    SET @lint_limit_Counter = 500
    
+   --indice de gruas 
+   DECLARE @lint_craneIdx INT
+   SET @lint_craneIdx=1
+   
+   -- valor de gruas 
+   DECLARE @lstr_craneid VARCHAR(10)
+   SET @lstr_craneid=''
    
   -- estrucutras 
    -- tabla visita, cont, universal, posicion,bloque, bahia, fila , estiba, id grua
@@ -152,7 +159,7 @@ AS
 			    strBlock     varchar(10) NULL,
 			    intCountCont int NULL,
 			    intCrane     int NULL,
-			    strBlock     varchar(10) NULL
+			    strBlockMark     varchar(10) NULL
 			  )	
     
     -- tabla de horas 
@@ -164,10 +171,27 @@ AS
 			    intHour              INT NULL,
 			    intMinute            INT NULL
 			   )
-		   
-	 -->>generar horarios 
-   
-
+			   
+	-- tabla de gruas 
+	 CREATE TABLE #CraneList
+	           (
+	             intCraneId  INT NULL,
+	             strCraneLabel varchar (10) NULL
+	           )
+	           
+	---- tabla de cantidad de gruas por tiempo 
+	 CREATE TABLE #TimeMarkCraneG
+	           (
+	             intMarkTime INT NULL,
+	             intCountCranes INT NULL
+	           )
+	 
+		-- marca tiempo, cantidad de gruas 
+    -------------
+	   
+	 -->>generar horarios    
+              SET @lint_idx_count = 1 
+              
 			   --- mientras el horario menor sea menor que el tope, y mientras no se alcance el tope del ciclo
 			     WHILE ( @dtm_back_StartDateTime <=@dtm_back_EndDateTime  AND @lint_idx_count  < @lint_limit_Counter )
 			                BEGIN
@@ -196,6 +220,33 @@ AS
 				                
 			               END --  WHILE ( @dtm_back_StartDateTime <=@dtm_back_EndDateTime)                   
           -- <<generar horarios 
+
+         -- >> llenar tabla de gruas 
+	         WHILE (@lint_craneIdx<=@intQtyCrane)
+	         BEGIN
+	         
+	               SET @lstr_craneid='0'+CONVERT(VARCHAR(3),@lint_craneIdx)
+	               
+	        		-- insertar grua 
+			        INSERT INTO #CraneList
+			           (
+			            	intCraneId ,
+			            	strCraneLabel 
+			           )
+			        VALUES (@lint_craneIdx,@lstr_craneid)
+			           
+			       	SET @lint_craneIdx = @lint_craneIdx +1    
+	             --- 
+	         END  --  WHILE (@lint_craneIdx<=@intQtyCrane)         
+        -- << llenar tabla de gruas 
+        
+   DECLARE @lint_craneIdx INT
+   SET @lint_craneIdx=1
+   
+   -- valor de gruas 
+   DECLARE @lstr_craneid VARCHAR(10)
+   SET @lstr_craneid=''
+         --<< fin  llenar tabla de gruas 
 
          -- >> obtener las visitas y contenedores agendadas por dia especifico
           
@@ -232,21 +283,623 @@ AS
          -- <<  fin obtener las visitas y contenedores agendadas por dia especifico
 
 
-  -- si agrupar por bloques 
-   INSERT INTO   #BlockTable
-			  (               
-			    strBlock    ,intCountCont ,intCrane  ,strBlock     
-			  )	
+  		-- si agrupar por bloques 
+		     INSERT INTO   #BlockTable
+					  (               
+					    strBlock ,intCountCont ,intCrane  ,strBlockMark
+					  )	
+			  
      SELECT strBlock, COUNT(strContainer) , 0 , ''
      FROM #ContainersTable
      GROUP BY #ContainersTable.strBlock
      
+     DECLARE @lstr_blockId varchar(10)
+     DECLARE @lint_CountContIdx int
      
-   -- cursor por bloques 
-   ---- un ciclo donde se este revisando el sieuinge contenedor 
-    --- fin ciclo revisando
-  --- fin cursor
+     -- contador de iteracion 
+     DECLARE @lint_whileidx int
+      SET @lint_whileidx = 0 
+     
+     -- limite de itecion
+     DECLARE @lint_whiletop
+      SET @lint_whiletop= 800
+     
+     SET @lstr_blockId =''
+     SET @lint_CountContIdx =0
+     ----
+          --- cantidad contenedores pendientes por marcar
+     DECLARE @lint_pendingconts INT
+     SET @lint_pendingconts =0
+
+     -- menor renglon
+     DECLARE @lstr_rowMIN varchar(7)
+     SET @lstr_rowMIN=''
+     
+     --mayor renglon 
+     DECLARE @lstr_rowMAX varchar(7)
+     SET @lstr_rowMAX=''
+    
+         --mayor nivel
+     DECLARE @lstr_stowMAX int
+     SET @lstr_stowMAX=''
+
+     -- contenedor encontrado
+     DECLARE @lstr_containerFound varchar(20)
+     SET @lstr_containerFound = ''
+     
+      -- grua actual
+      DECLARE @lint_CurrentCraneIdx INT
+      set @lint_CurrentCraneIdx =0
+
+      -- bahia actual
+      DECLARE @lstr_CurrentBay varchar(5)
+      SET @lstr_CurrentBay =''
+
+      -- row actual
+      DECLARE @lstr_CurrentRow varchar(5)
+      SET @lstr_CurrentRow =''
+
+
+      -- nivel actual
+      DECLARE @lstr_CurrentStow varchar(3)
+      SET @lstr_CurrentStow  =0 
+
+      -- marca de tiempo encontrada
+      DECLARE @lint_FoundMarkTime int
+      SET @lint_FoundMarkTime =0
   
+      --tiempo encontrado
+      DECLARE @ldtm_foundDate datetime
+      SET @ldtm_foundDate = NULL
+      
+      -- fecha nula 
+      DECLARE @ldtmNULDATE datetime
+      SET @ldtmNULDATE  ='19000101 00:00'
+
+      -- cantidad de gruas encontrada
+      DECLARE @lint_cranecountfound INT
+      SET @lint_cranecountfound =0
+       
+     -- variable secundaria de grua encontrada
+      DECLARE @lint_craneotherfound INT 
+      SET @lint_craneotherfound  =0
+ 
+      -- orden en bloque 
+      DECLARE @lint_orderinblock INT
+      SET @lint_orderinblock =0
+
+
+     -- menor BAY
+     DECLARE @lstr_BAYMIN varchar(7)
+     SET @lstr_BAYMIN=''
+     
+     --mayor BAY
+     DECLARE @lstr_BAYMAX varchar(7)
+     SET @lstr_BAYMAX=''
+          
+     -- actual BAY
+     DECLARE @lstr_CurrentBAY varchar(7)
+     SET @lstr_CurrentBAY=''
+     
+      -- contador de contenedores
+      DECLARE @lint_countcont INT
+      SET @lint_countcont = 0
+     --------
+     
+      -- entero temporal
+      DECLARE @lint_tempint INT
+      SET @lint_tempint = 0
+
+      -- temporal string 
+      DECLARE @lstr_tempstring varchar(10)
+      SET @lstr_tempstring = ''
+     --------
+     
+     
+      -- temporal fecha
+      DECLARE @ldtm_tempdate datetime
+      set @ldtm_tempdate = NULL
+      ------------
+     
+ 	  -- cursor por bloques 
+	       DECLARE blockcur  CURSOR FOR  
+                  SELECT strBlock , intCountCont
+                  FROM #BlockTable
+                  ORDER BY intCountCont DESC
+                  
+                  --FOR READ ONLY 
+                  -- abrir el cursor
+                   OPEN blockcur
+                   
+                   -- leer el cursor 
+                   FETCH  blockcur INTO @lstr_blockId ,  @lint_CountContIdx
+                   
+     
+                   -- PRINT 'inicio cursor'
+                   --
+                   -- ciclo del cursor 
+                   WHILE ( @@sqlstatus = 0 )
+                          begin
+		  					    -- si el bloque contiene cantidad mayor
+		  					   -- IF (@lint_CountContIdx >=  @lint_mincontfblock )		  					    
+		  					    IF (@lint_CountContIdx >=  1 )		  					    
+		  					    -- poner el id de orden en el bloque en 0
+			  					    BEGIN
+			  					        -- obtener la cantidad de contenedores pendientes por macar 
+				  					        SELECT @lint_pendingconts  = COUNT(strContainer  )
+				  					        FROM #ContainersTable
+				  					        WHERE strBlock =  @lstr_blockId
+				  					        AND ISNULL(intOrderId ,0) =0
+				  					        
+			  					        -- incializa indice de contandor
+			  					             SET @lint_whileidx = 0 
+			  					           
+							         	-- obtener el menor  renglon BAY, ,sin marcar
+							              	SELECT @lstr_BAYMIN= MIN(strBay )
+							         	    FROM #ContainersTable
+							         	    WHERE strBlock =  @lstr_blockId
+							         	    AND ISNULL(intOrderId ,0) =0
+							         	    
+							         	    SET @lstr_BAYMIN= ISNULL(@lstr_BAYMIN,'')
+							         	    SET @lstr_CurrentBAY=@lstr_BAYMIN
+	
+							         	-- obtener el nivel maximo,  sin marcar
+							         	    SELECT  @lstr_stowMAX  =  MAX(strStow  )
+							         	     FROM #ContainersTable
+							         	    WHERE strBlock =  @lstr_blockId
+							         	    AND ISNULL(intOrderId ,0) =0
+							         	    AND strBay = @lstr_CurrentBAY
+							         	    
+							         	    SET  @lstr_CurrentStow = @lstr_stowMAX
+							         	-- obtener el menor row,con nivel maximo y el renglon-bay escogido sin marcar 
+
+							         	     SELECT  @lstr_rowMIN   =MIN(strRow )
+							         	     FROM #ContainersTable
+							         	    WHERE strBlock =  @lstr_blockId
+							         	    AND ISNULL(intOrderId ,0) =0
+							         	    AND strBay = @lstr_CurrentBAY
+							         	    AND @lstr_stowMAX = strStow 
+							         	    
+							         	    SET @lstr_CurrentRow  = @lstr_rowMIN
+
+							         	    
+							         	-- obtener los contenedores del bloque sin marcar 
+							         	SELECT  @lstr_containerFound = MIN (strContainer )
+							         	FROM #ContainersTable
+							         	WHERE strBlock =  @lstr_blockId
+							         	    AND ISNULL(intOrderId ,0) =0
+							         	    AND @lstr_CurrentBAY = strBay 
+							         	    AND @lstr_stowMAX = strStow 
+							         	    AND @lstr_rowMIN  = strRow
+
+							         	-- inicializar el contador de iteciones 
+							         	  SET @lint_whileidx = 0 
+							         	  
+				         				-- incializa indice de contandor
+				         				  SET @lint_orderinblock =0
+				         				  SET @lint_whileidx = 0 
+				         				  
+				         				-- generar contador disponible conteneodes sin marcar
+				         				    SELECT @lint_pendingconts  = COUNT(strContainer  )
+				  					        FROM #ContainersTable
+				  					        WHERE strBlock =  @lstr_blockId
+				  					        AND ISNULL(intOrderId ,0) =0
+
+							         					---- un ciclo donde se este revisando el sieuinge contenedor , mientras contador de  disponible sea mayor a 0 y contador de iteracion menor que elilimte 
+							         					WHILE ( ( @lint_pendingconts>0 ) AND ( @lint_whileidx < @lint_whiletop )  )
+							         					BEGIN
+								         					 -- obtener el contenedor con bloque, renglon, bahia 
+								         					 	SELECT  @lstr_containerFound = MIN (strContainer )
+								         					 	FROM #ContainersTable
+								         					 	 WHERE strBlock =  @lstr_blockId
+								         					 	 AND ISNULL(intOrderId ,0) =0
+								         					 	 AND @lstr_CurrentBAY = strBay 
+								         					 	 AND @lstr_stowMAX = strStow 
+								         					 	 AND @lstr_rowMIN  = strRow
+
+								         					 
+								         					 -- obtener la ultima marca de tiempo ,para el bloque y la grua , 
+								         					     SELECT @lint_FoundMarkTime = MAX( intMarkTime )
+								         					     FROM  #ContainersTable
+								         					     WHERE  strBlock =  @lstr_blockId
+								         					     
+								         					 --  @lint_FoundMarkTime
+								         					    SET @lint_FoundMarkTime = ISNULL(@lint_FoundMarkTime,0)
+								         					 	 
+
+								         					  --si no lo enocontro , 
+								         					  IF (@lint_FoundMarkTime=0)
+								         					  BEGIN
+								         					       -- buscar la hora menor. que no tenga el limite de gruas 
+								         					        	---- tabla de cantidad de gruas por tiempo 
+								         					        	DELETE #TimeMarkCraneG
+								         					        	
+								         					        	INSERT INTO #TimeMarkCraneG(intMarkTime ,intCountCranes  )
+								         					        	SELECT intMarkTime ,COUNT(intCrane )
+								         					        	FROM  #ContainersTable
+								         					        	GROUP BY intMarkTime
+								         					        	
+								         					        	
+								         					        	SELECT  @lint_FoundMarkTime =  MIN(intMarkTime)
+								         					        	FROM #TimeMarkCraneG
+								         					        	WHERE intCountCranes < @intQtyCrane
+								         					        	
+								         					        	SET @lint_FoundMarkTime = ISNULL(@lint_FoundMarkTime,0)
+								         					        	
+								         					       -- si no hay hora
+								         					        IF (@lint_FoundMarkTime =0)
+								         					        BEGIN
+								         					        
+								         					           --empezar desde el indice de tiempo 0 
+								         					            SET @lint_FoundMarkTime = 1
+								         					            
+									         					       -- ver si existen gruas en ese tiempo
+									         					        SELECT @lint_cranecountfound = COUNT(intCrane )
+									         					        FROM  #ContainersTable
+									         					        WHERE #ContainersTable.intMarkTime =@lint_FoundMarkTime
+									         					        
+									         					        SET @lint_cranecountfound =ISNULL(@lint_cranecountfound,0)
+									         					        
+									         					         -- si existen gruas 
+									         					         IF ( @lint_cranecountfound >0)
+									         					         	BEGIN
+										         					          -- obtener la grua con el indice mayor, y sumarle 1 al inidice
+										         					          SELECT @lint_cranecountfound = MAX( intCrane)
+										         					          FROM #ContainersTable
+										         					          WHERE #ContainersTable.intMarkTime =@lint_FoundMarkTime
+										         					          
+										         					          SELECT @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
+										         					          SET @lint_cranecountfound = @lint_cranecountfound +1
+										         					          
+										         					          -- si el inidice se ha superado, iniciar en inidice 1 
+										         					          IF ( @lint_cranecountfound > @intQtyCrane)
+										         					          BEGIN
+										         					             SET @lint_cranecountfound =1
+										         					          END
+										         					       END -- IF ( @lint_cranecountfound >0)
+										         					       ELSE 
+										         					       BEGIN
+										         					       	-- si no existen gruas 
+										         					            
+										         					            SELECT  @lint_FoundMarkTime = MAX(intMarkTime )
+										         					            FROM #ContainersTable
+										         					           WHERE  strBlock =  @lstr_blockId
+										         					           
+										         					           -- obtener la ultima grua usada en el bloque 
+										         					           SELECT @lint_cranecountfound =  MAX(intCrane ) 
+										         					           FROM #ContainersTable
+										         					           WHERE  strBlock =  @lstr_blockId
+										         					           AND intMarkTime = @lint_FoundMarkTime
+										         					           
+										         					           SET @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
+										         					           
+										         					             -- si no hay la ultima grua usada en el bloque
+										         					             IF (@lint_cranecountfound =0)
+										         					             BEGIN
+										         					               -- obtener la ultima grua usada en general,										         					                  
+										         					                    SELECT @lint_cranecountfound =  MAX(intCrane ) 
+										         					                    FROM #ContainersTable
+										         					                    WHERE   intMarkTime = @lint_FoundMarkTime 
+										         					                  
+										         					                -- usar el indice siguiente de la siguiente grua, si se llego al indice limite , usar el indice 1  
+										         					                   IF (@lint_cranecountfound >=  @intQtyCrane)
+										         					                   BEGIN 
+										         					                     SET @lint_cranecountfound = 1 
+										         					                   END 
+										         					                   
+										         					             END   --IF (@lint_cranecountfound =0)
+										         					             -- fin si no hau la ultima usada en el bloque 								         					           
+										         					            
+										         					         -- fin si no existen gruas 
+
+										         					       END  -- ELSE -- IF ( @lint_cranecountfound >0)
+										         					         ------									         					      
+										         					       
+									         					      -- fin si no lo encontro		
+									         					      
+								         					        END -- IF (@lint_FoundMarkTime =0)      					  
+								         					  
+								         					              
+								         					  --
+								         					  END --  IF (@lint_FoundMarkTime=0)
+								         					 ELSE --	si encontro la marca de tiempo
+								         					  BEGIN 
+								         					       -- contar cuantos contenedores se han cargado en esa marca de tiempo, si ya esta en el limite , avanzar a la siguiente marca de tiempo
+								         					        SELECT @lint_countcont =  COUNT( strContainer  )
+								         					        FROM #ContainersTable
+								         					        WHERE  #ContainersTable.intMarkTime   = @lint_FoundMarkTime 
+								         					        AND  strBlock =  @lstr_blockId
+								         					        
+								         					        IF ( @lint_countcont >@intQtyPerHour)
+								         					        BEGIN 
+								         					          SET  @lint_FoundMarkTime = @lint_FoundMarkTime +1 
+								         					        END  --IF ( @lint_countcont >@intQtyPerHour)
+
+								         					        
+								         					  END  -- ELSE IF (@lint_FoundMarkTime=0)
+								         					  -- fin si encontro la marca de tiempo								         					 
+
+								         					    -- si no hay  grua 
+								         					    IF ( @lint_cranecountfound =0)
+								         					    BEGIN
+								         					      -- obtener la grua 1
+								         					      SET  @lint_cranecountfound =1 								         					      
+								         					    END 
+
+								         					 
+								         					 -- si la marca de tiempo es 0, ponerla en 1 
+								         					 IF (@lint_FoundMarkTime =0)
+								         					 BEGIN
+								         					  SET @lint_FoundMarkTime =1 
+								         					 END 
+								         					 
+								         					 -- definirle el id de orden en el bloque 
+								         					 -- obtener el ulitmo id de orden en el bloque , 
+								         					 SELECT  @lint_tempint = MAX(intOrderId )
+								         					 FROM #ContainersTable
+								         					 WHERE strBlock =  @lstr_blockId
+								         					 
+								         					 --- validar
+								         					 SET  @lint_tempint = ISNULL( @lint_tempint,0)
+								         					 SET @lint_orderinblock = @lint_tempint
+								         					 
+								         					 -- si no existe ponerle el id 1
+								         					 IF( @lint_orderinblock =0)
+									         					 BEGIN
+									         					  SET @lint_orderinblock = 1
+									         					 END 
+								         					 ELSE 
+									         					 BEGIN
+									         					    SET @lint_orderinblock = @lint_orderinblock +1 
+									         					 END 	
+									         					 							         		
+
+								         					 -- si el id de orden no esta, ponerle 0								         					  
+								         					 -- obtener los valores de  fecha del catalogo
+								         					   SELECT @lstr_tempstring = strTime  
+								         					         ,@ldtm_tempdate =dateTimeMark         
+								         					   FROM #TimeMarks
+								         					   WHERE intMarkTime=@lint_FoundMarkTime 
+								         					 
+								         					 ---- marcar, como orden 	         	
+								         					 									         					 			 
+								         					 -- marcar la tabla con el contenedor , en la marca de tiempo y grua ,
+								         					 UPDATE #ContainersTable
+								         					 SET #ContainersTable.intOrderId =@lint_orderinblock
+								         					    ,#ContainersTable.intMarkTime = @lint_FoundMarkTime 
+								         					    ,strTime  = strTime 
+								         					    ,dateTimeMark=@ldtm_tempdate
+								         					    ,intCrane = @lint_cranecountfound
+								         					 WHERE @lstr_containerFound = strContainer
+								         					 AND ISNULL( #ContainersTable.intOrderId,0) =0
+								         					 
+								         					 -- si el contenedor no tiene marca de grua de nobmre ponerselo el nombre de grua strCraneval 
+								         					   -- obtener la marca de la grua en listado de contenedores
+								         					    SET @lstr_tempstring=''
+								         					    --
+								         					    SELECT @lstr_tempstring =  strCraneval 
+								         					    FROM   #ContainersTable
+								         					    WHERE @lstr_containerFound = strContainer
+								         					   SET  strCraneval = ISNULL( strCraneval ,'')
+								         					   
+								         					    IF ( LEN(@lstr_tempstring) <=2) -- SI NO HAY MARCA
+								         					    BEGIN
+								         					      
+								         					      -- OBTENER NOMBRE DE GRUA 
+								         					      SELECT @lstr_tempstring =strCraneLabel 
+								         					      FROM  #CraneList
+								         					      WHERE intCraneId   =  @lint_cranecountfound
+								         					      -- PONER EL ID DE GRUA STRING  
+								         					       UPDATE #ContainersTable
+								         					       SET strCraneval =  @lstr_tempstring
+								         					       WHERE @lstr_containerFound = strContainer
+								         					       
+								         					    END -- SI NO HAY MARCA strCraneval
+								         					    
+								         					 
+								         					 -- bucar la siguiente posicion		
+								         					  
+								         					  
+								         					    -- ver si el contendor actual hay otros contenedores de visita 								         					    
+								         					     -- obtener la visita 
+								         					     SELECT @lint_tempint = #ContainersTable.intVisitId 
+								         					     FROM #ContainersTable
+								         					     WHERE #ContainersTable.strContainer = @lstr_containerFound								         					  
+								         					     
+								         					    -- si hay contenedores en la visita de otros bloques, ponerles una marca en comentario, en strCraneval 
+								         					     UPDATE #ContainersTable
+								         					     SET strCraneval  = 'BLOQUE_ID='+ @lstr_blockId
+								         					     WHERE #ContainersTable.intVisitId =  @lint_tempint
+								         					     AND  #ContainersTable.strContainer <> @lstr_containerFound
+								         					     AND   strBlock <>  @lstr_blockId
+								         					  
+								         					  SET @lstr_tempstring =''
+								         					     
+								         					    -- ver si hay contenedores en la visita, pero con el mismo bloque							         					     
+								         					    IF EXISTS ( SELECT strContainer  FROM #ContainersTable
+								         					                                    WHERE #ContainersTable.intVisitId =  @lint_tempint
+								         					                                    AND  #ContainersTable.strContainer <> @lstr_containerFound
+								         					                                    AND   strBlock =  @lstr_blockId
+								         					                                    AND  ISNULL(intOrderId ,0)=0
+								         					      )
+									         					    BEGIN
+									         					    --  -- si hay contenedores  con visita del mismo bloque
+									         					            -- obtener el menor contenedor si marcar
+									         					            SELECT @lstr_tempstring = MIN(#ContainersTable.strContainer)
+									         					            FROM #ContainersTable
+									         					            WHERE #ContainersTable.intVisitId =  @lint_tempint
+									         					            AND  #ContainersTable.strContainer <> @lstr_containerFound
+									         					            AND   strBlock =  @lstr_blockId
+									         					            AND  ISNULL(intOrderId ,0)=0
+									         					            
+									         					            -- obtener su bloque , fila, bahia, estiba 
+									         					            SELECT @lstr_BAYMIN = strBay 
+									         					                  ,@lstr_rowMIN= strRow 
+									         					                  , @lstr_stowMAX  = strStow 
+									         					            FROM #ContainersTable
+									         					            WHERE  #ContainersTable.strContainer =@lstr_tempstring 
+									         					            
+									         					    END -- IF EXISTS ( SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.intVisitId =  @lint_tempint									         					    
+								         					    ELSE  -- si no hay contenedores en la misma visita 
+								         					    BEGIN
+								         					      -- ver si en la bahia actual ahi contenedores sin marcar 
+								         					     
+								         					      -- si hay contenedores en la bahia actual
+								         					      IF EXISTS (  SELECT strContainer  FROM #ContainersTable 
+								         					                   WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+								         					                   AND   strBlock =  @lstr_blockId
+								         					                   AND  ISNULL(intOrderId ,0)=0
+								         					                 )
+								         					             BEGIN								         					      		
+										         					         -- obtener  el nivel mas alto sin marcar
+										         					         SELECT  @lstr_stowMAX =MAX(strStow )
+										         					         FROM #ContainersTable
+										         					           WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+								         					                   AND   strBlock =  @lstr_blockId
+								         					                   AND  ISNULL(intOrderId ,0)=0
+										         					         
+										         					         -- obtener el row menor con el nivel mas alto sin marcar 
+										         					         SELECT @lstr_rowMIN=MIN(strRow  )
+										         					         FROM #ContainersTable
+										         					           WHERE #ContainersTable.strBay  = @lstr_CurrentBAY
+								         					                   AND   strBlock =  @lstr_blockId
+								         					                   AND  ISNULL(intOrderId ,0)=0
+								         					                   AND  @lstr_stowMAX =strStow 
+								         					               
+
+										         					         
+									         					        END --IF EXISTS (  SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+									         					   ELSE
+									         					    BEGIN ----IF EXISTS (  SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+ 
+										         					      --- si no hay contenedores en la bahia actual 
+										         					              SET @lstr_BAYMAX =''
+												         					      --- obtener la maxima habia menor que la actual con contenedores sin marcar
+												         					      SELECT @lstr_BAYMAX = MAX(strBay )
+												         					      FROM  #ContainersTable 
+												         					      WHERE strBay < @lstr_CurrentBAY
+												         					      AND ISNULL(intOrderId ,0)=0
+												         					      AND strBlock =  @lstr_blockId
+												         					      --
+												         					      SET @lstr_BAYMAX =ISNULL( @lstr_BAYMAX,'X')
+												         					      
+												         					      --- obtener la minima bahia mayor que la actual con contendores sin marcar								         					      
+												         					      SET @lstr_BAYMIN  =''
+												         					      
+												         					      SELECT @lstr_BAYMIN = MIN(strBay )
+												         					      FROM  #ContainersTable 
+												         					      WHERE strBay > @lstr_CurrentBAY
+												         					      AND ISNULL(intOrderId ,0)=0
+												         					      AND strBlock =  @lstr_blockId
+												         					      --
+												         					      SET @lstr_BAYMIN =ISNULL( @lstr_BAYMIN,'X')
+												         					      
+												         					      -- si existe ya sea la bahia menor o mayor evaluar 
+												         					      IF ( @lstr_BAYMIN <>'' AND @lstr_BAYMIN<>'X') OR (@lstr_BAYMAX<>'' AND @lstr_BAYMAX<>'X') )
+												         					      BEGIN
+												         					             SET @lint_countcont =0
+														         					      -- obtener la cantidad de contenedores la bahia menor
+														         					      SELECT @lint_countcont = COUNT(strContainer   )
+														         					      FROM #ContainersTable
+														         					      WHERE #ContainersTable.strBay = @lstr_BAYMIN 
+														         					      AND ISNULL(intOrderId ,0)=0
+														         					      AND strBlock =  @lstr_blockId
+														         					     
+														         					      SET @lint_countcont = ISNULL( @lint_countcont,0)
+														         					      
+														         					      -- obtener la cantidad de contenedores la bahia mayor
+														         					      SET @lint_tempint  =0 
+														         					        SELECT @lint_tempint  = COUNT(strContainer   )
+														         					      FROM #ContainersTable
+														         					      WHERE #ContainersTable.strBay = @lstr_BAYMAX 
+														         					      AND ISNULL(intOrderId ,0)=0
+														         					      AND strBlock =  @lstr_blockId
+														         					      
+														         					      SET @lint_tempint  = ISNULL(@lint_tempint ,0)
+														         					      
+														         					      -- si la cantidad de la bahia menor es mayor o igual que el de la mayor
+														         					      IF ( @lint_countcont >=@lint_tempint)
+															         					      BEGIN
+															         					        -- indicar que la proxima bahia sera la menor 
+															         					        SET   @lstr_CurrentBAY  =  @lstr_BAYMIN
+															         					      END 											
+														         					     -- si no
+														         					     ELSE														         					      	
+															         					     BEGIN
+															         					          -- indicar que la proxima bahia sera la mayor	
+															         					          @lstr_CurrentBAY  = @lstr_BAYMAX 
+															         					      
+															         					      END  --ELSE--IF ( @lint_countcont >=@lint_tempint)  -- si la cantidad de la bahia menor es mayor o igual que el de la mayor
+															         					     	
+															         				
+															         				  -- obtener  el nivel mas alto sin marcar
+												         					         SELECT  @lstr_stowMAX =MAX(strStow )
+												         					         FROM #ContainersTable
+												         					           WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+										         					                   AND   strBlock =  @lstr_blockId
+										         					                   AND  ISNULL(intOrderId ,0)=0
+										         					                   
+										         					         
+												         					         -- obtener el row menor con el nivel mas alto sin marcar 
+												         					         SELECT @lstr_rowMIN=MIN(strRow  )
+												         					         FROM #ContainersTable
+												         					           WHERE #ContainersTable.strBay  = @lstr_CurrentBAY
+										         					                   AND   strBlock =  @lstr_blockId
+										         					                   AND  ISNULL(intOrderId ,0)=0
+										         					                   AND  @lstr_stowMAX =strStow 	
+								         					                   
+												         					     	
+												         					 	   END -- IF ( @lstr_BAYMIN <>'' AND @lstr_BAYMIN<>'X') OR (@lstr_BAYMAX<>'' AND @lstr_BAYMAX<>'X') )
+												         					 	   
+														         			    --- fin si existe  alguna bahia con contenedores con marcar  					      													         			    
+														         			      
+												         			 END-- ELSE --IF EXISTS (  SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+												         		 -- fin si no hay contenedores en la misma bahia actual 
+												         		 
+												         		 
+												         	 END --ELSE IF EXISTS ( SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.intVisitId =  @lint_tempint
+								         					  -- fin si no hay contenedores en la misma visita 
+				         				 
+							         					     -- fin de busqueda de siguiente posiscion
+							         					      ---?? ver si en la siguiente posicion hay contenedores sin marcar?? sino hay , en el bloque hay???, obtener el de la visita menor?
+							         					     
+							         					     -- contar la cantidad de conteendores sin marcar
+							         					     SELECT @lint_pendingconts  = COUNT(strContainer  )
+							         					     FROM #ContainersTable
+							         					     WHERE strBlock =  @lstr_blockId
+							         					     AND ISNULL(intOrderId ,0) =0
+
+
+							         					  -- incrementar la cantida de iteraciones 
+							         					  SET @lint_whileidx = @lint_whileidx +1 
+							         					  
+													    --- fin ciclo revisando , 
+													 END --WHILE ( ( @lint_pendingconts>0 ) AND ( @lint_whileidx < @lint_whiletop )  )
+													    
+									END-- IF (@lint_CountContIdx >=  @lint_mincontfblock )
+									
+								ELSE -- IF (@lint_CountContIdx >=  @lint_mincontfblock )
+								-- IF (@lint_CountContIdx >=  1)
+									--BEGIN
+								      -- sino , marcar el bloque con reacomodo, marcar los contenedores con reacomovdo segun la variable de marcacion 								      
+								--    END  --ELSE -- IF (@lint_CountContIdx >=  @lint_mincontfblock )							      
+								    
+							   FETCH  blockcur INTO @lstr_blockId ,  @lint_CountContIdx
+
+                          end 
+                        -- fin ciclo cursor
+                   CLOSE blockcur
+                   DEALLOCATE CURSOR blockcur
+                   ------
+	
+	  --- fin cursor bloques 
+	  -- retornar tabla resultados 
+	  SELECT * FROM  #BlockTable
+  
+        DROP TABLE #BlockTable
+        DROP TABLE #ContainersTable
+        DROP TABLE #TimeMarks
+        DROP TABLE 
         
 	          
 	    END -- IF (@intMode  =1)
