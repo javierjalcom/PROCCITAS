@@ -16,6 +16,7 @@ AS
  
    DECLARE  @dtmStartDateDay DATETIME
    DECLARE  @dtmEndtDateDay DATETIME
+
    
 
     	IF (@intMode  =1)
@@ -25,113 +26,82 @@ AS
 	          SET @dtmStartDateDay =  CONVERT(DateTime, CONVERT(Char,   @dtmDate , 103) + '00:01'  , 103)
 	          SET @dtmEndtDateDay =   CONVERT(DateTime, CONVERT(Char,   @dtmDate , 103) + '23:59'  , 103)
 	          
-	          --SET @dtmSingleDate = CONVERT(DateTime, CONVERT(Char, @dtmAppointDate , 103), 103)
-	          
-	          --SELECT tblclsVisit.intVisitId as 'intVisitId'
-	          --FROM tblclsVisit
-	          --WHERE tblclsVisit.dtmAppointmentDate BETWEEN @dtmStartDate AND @dtmEndtDate
-	          
-	          
-	          SELECT TOP 10 tblclsVisit.intVisitId   
-	          FROM tblclsVisit
-	          WHERE ISNULL(tblclsVisit.dtmAppointmentDate,'19000101 00:00') > '19000101 00:00'
-	          ORDER BY tblclsVisit.intVisitId  DESC 
+	       
+  	
+	  ------------
+	   -- variables 
+	  -- limite de minimo de contenedores  en bloque
+	    DECLARE @lint_mincontfblock INT
+	    SET @lint_mincontfblock = 10
 	    
------------
- --son varias gruas
-  -- obtener el listdado de contenedores que son para ese dia , obtener la posicion, bloque , fila bahia estiba 
- -- ordenarlos por bloque , bahia ,
- -- obtener lista de bloques agrupados por cantidad de contenedores ,
- -- hacer un cursor por bloque
-
-  -- inicio cursor
-        -- ordernar por bahia
-        -- -- obtener el listado de bahias , (numerica)
-        -- obtener listado de bahias (numericas)
-        -- agrupar habias numericas 
-        -- cursor bahias numericas
-          -- ordenar por letras
-           -- cursor por letras 
-                     -- order por numeros 
-                     -- insertar primero los renglones 
-                     
-           -- fin cursor letras 
-             
-
-          
-         -- ??? como hacer para insertar primero los niverles mas altos?
-        --- fin cursor bahias numericas 
-        
-  -- fin cursor bloques 
-  
-  ------------
-   -- variables 
-  -- limite de minimo de contenedores  en bloque
-    DECLARE @lint_mincontfblock INT
-    SET @lint_mincontfblock = 10
-    
-  -- marca de bloque reemplazado 
-    DECLARE @lstr_blockMovMark VARCHAR(8)
-    SET @lstr_blockMovMark ='TOMOV'
-        
-  -- inicio en numero
-    DECLARE @lint_startHour int
-    SET @lint_startHour= 7
-    
-    DECLARE @lint_startMinute int
-    SET @lint_startMinute = 0
-    
-  -- inicio en texto
-    DECLARE @lstr_startTime varchar(10)
-    SET @lstr_startTime ='07:00'
-    
-  -- FIN en numero hora
-    DECLARE @lint_endHour int 
-    SET @lint_endHour = 15
-
-  -- FIN en numero minuto
-    DECLARE @lint_endMinute int 
-    SET @lint_endMinute = 30
-        
-  -- fin en texto  
-    DECLARE @lstr_endTime varchar(10)
-    SET  @lstr_endTime = '15:00'
-
-  -- fecha y hora inicio
-    DECLARE @ldtm_StartTime datetime
-  
-  -- fecha y hora fin 
-    DECLARE @ldtm_EndTime datetime 
-    
-   -- valore de incremento 
-    DECLARE @lint_minute_increase INT
-    SET  @lint_minute_increase = 60
-  
-  -- fecha, hora de inicio
-    DECLARE @dtm_back_StartDateTime DATETIME
-    SET @dtm_back_StartDateTime = CONVERT(DateTime, CONVERT(Char,   @dtmDate , 103) + @lstr_startTime  , 103)
-    
-
-  -- fecha , hora de fin 
-    DECLARE @dtm_back_EndDateTime DATETIME
-    SET @dtm_back_EndDateTime = CONVERT(DateTime, CONVERT(Char,   @dtmDate , 103) + @lstr_endTime  , 103)
-    
-   -- indice
-   DECLARE @lint_idx_count
-   SET @lint_idx_count =1
-   
-   -- limite contador
-   DECLARE @lint_limit_Counter
-   SET @lint_limit_Counter = 500
-   
-   --indice de gruas 
-   DECLARE @lint_craneIdx INT
-   SET @lint_craneIdx=1
-   
-   -- valor de gruas 
-   DECLARE @lstr_craneid VARCHAR(10)
-   SET @lstr_craneid=''
-   
+	  -- marca de bloque reemplazado 
+	    DECLARE @lstr_blockMovMark VARCHAR(8)
+	    SET @lstr_blockMovMark ='TOMOV'
+	        
+	  -- inicio en numero
+	    DECLARE @lint_startHour int
+	    SET @lint_startHour= 7
+	    
+	    DECLARE @lint_startMinute int
+	    SET @lint_startMinute = 0
+	    
+	  -- inicio en texto
+	    DECLARE @lstr_startTime varchar(10)
+	    SET @lstr_startTime ='07:00'
+	    
+	  -- FIN en numero hora
+	    DECLARE @lint_endHour int 
+	    SET @lint_endHour = 15
+	
+	  -- FIN en numero minuto
+	    DECLARE @lint_endMinute int 
+	    SET @lint_endMinute = 30
+	        
+	  -- fin en texto  
+	    DECLARE @lstr_endTime varchar(10)
+	    SET  @lstr_endTime = '15:00'
+	
+	  -- fecha y hora inicio
+	    DECLARE @ldtm_StartTime datetime
+	  
+	  -- fecha y hora fin 
+	    DECLARE @ldtm_EndTime datetime 
+	    
+	   -- valore de incremento 
+	    DECLARE @lint_minute_increase INT
+	    SET  @lint_minute_increase = 60
+	    
+	    DECLARE @lstr_timeback  VARCHAR(20)
+	    SET @lstr_timeback=''
+	  
+	  -- fecha, hora de inicio
+	    DECLARE @dtm_back_StartDateTime DATETIME
+	    SET @dtm_back_StartDateTime = CONVERT(DateTime, CONVERT(Char,   @dtmDate , 103) + @lstr_startTime  , 103)
+	    
+	
+	  -- fecha , hora de fin 
+	    DECLARE @dtm_back_EndDateTime DATETIME
+	    SET @dtm_back_EndDateTime = CONVERT(DateTime, CONVERT(Char,   @dtmDate , 103) + @lstr_endTime  , 103)
+	    
+	   -- indice
+	   DECLARE @lint_idx_count INT
+	   SET @lint_idx_count =1
+	   
+	   -- limite contador
+	   DECLARE @lint_limit_Counter INT
+	   SET @lint_limit_Counter = 500
+	   
+	   --indice de gruas 
+	   DECLARE @lint_craneIdx INT
+	   SET @lint_craneIdx=1
+	   
+	   -- valor de gruas 
+	   DECLARE @lstr_craneid VARCHAR(10)
+	   SET @lstr_craneid=''
+	   
+	   DECLARE @int_idxHour INT
+	   DECLARE @int_idxMinute INT
+	   
   -- estrucutras 
    -- tabla visita, cont, universal, posicion,bloque, bahia, fila , estiba, id grua
      CREATE TABLE  #ContainersTable
@@ -183,7 +153,8 @@ AS
 	 CREATE TABLE #TimeMarkCraneG
 	           (
 	             intMarkTime INT NULL,
-	             intCountCranes INT NULL
+	             intCountCranes INT NULL,
+	             intCrane INT NULL
 	           )
 	 
 		-- marca tiempo, cantidad de gruas 
@@ -225,7 +196,7 @@ AS
 	         WHILE (@lint_craneIdx<=@intQtyCrane)
 	         BEGIN
 	         
-	               SET @lstr_craneid='0'+CONVERT(VARCHAR(3),@lint_craneIdx)
+	               SET @lstr_craneid='00'+CONVERT(VARCHAR(3),@lint_craneIdx)
 	               
 	        		-- insertar grua 
 			        INSERT INTO #CraneList
@@ -240,11 +211,10 @@ AS
 	         END  --  WHILE (@lint_craneIdx<=@intQtyCrane)         
         -- << llenar tabla de gruas 
         
-   DECLARE @lint_craneIdx INT
+
    SET @lint_craneIdx=1
    
-   -- valor de gruas 
-   DECLARE @lstr_craneid VARCHAR(10)
+   -- valor de gruas   
    SET @lstr_craneid=''
          --<< fin  llenar tabla de gruas 
 
@@ -262,10 +232,10 @@ AS
                tblclsVisitContainer.intContainerUniversalId , tblclsVisitContainer.strContainerId , tblclsVisitContainer.intVisitId , tblclsVisitContainer.intVisitItemId
 			   
 			   -- strPosition ,strBlock ,strBay ,strRow ,
-			   tblclsContainerInventory.strContainerInvYardPositionId , tblclsContainerInventory.strContainerInvBlockIdentifier , tblclsContainerInventory.strContainerInvPosBay, tblclsContainerInventory.strContainerInvPosRow
+			   ,tblclsContainerInventory.strContainerInvYardPositionId , tblclsContainerInventory.strContainerInvBlockIdentifier , tblclsContainerInventory.strContainerInvPosBay, tblclsContainerInventory.strContainerInvPosRow
 			   
 			   -- strStow ,  intMarkTime , strTime  ,dateTimeMark  ,
-			   tblclsContainerInventory.strContainerInvPosStow , 0 , '' , NULL 
+			  , tblclsContainerInventory.strContainerInvPosStow , 0 , '' , NULL 
 			   
 			   --  intCrane ,strCraneval ,intOrderId 
 			   ,0 , '' , 0
@@ -281,7 +251,12 @@ AS
          AND  tblclsService.strServiceIdentifier = 'ENTLL'
 
          -- <<  fin obtener las visitas y contenedores agendadas por dia especifico
-
+         
+         --  actualizar los bloques en mayusculas          
+          UPDATE #ContainersTable
+          SET #ContainersTable.strBlock = UPPER(#ContainersTable.strBlock)
+         
+         -- 
 
   		-- si agrupar por bloques 
 		     INSERT INTO   #BlockTable
@@ -301,7 +276,7 @@ AS
       SET @lint_whileidx = 0 
      
      -- limite de itecion
-     DECLARE @lint_whiletop
+     DECLARE @lint_whiletop INT
       SET @lint_whiletop= 800
      
      SET @lstr_blockId =''
@@ -320,7 +295,7 @@ AS
      SET @lstr_rowMAX=''
     
          --mayor nivel
-     DECLARE @lstr_stowMAX int
+     DECLARE @lstr_stowMAX varchar(7)
      SET @lstr_stowMAX=''
 
      -- contenedor encontrado
@@ -342,7 +317,7 @@ AS
 
       -- nivel actual
       DECLARE @lstr_CurrentStow varchar(3)
-      SET @lstr_CurrentStow  =0 
+      SET @lstr_CurrentStow  =''
 
       -- marca de tiempo encontrada
       DECLARE @lint_FoundMarkTime int
@@ -391,7 +366,7 @@ AS
       SET @lint_tempint = 0
 
       -- temporal string 
-      DECLARE @lstr_tempstring varchar(10)
+      DECLARE @lstr_tempstring varchar(20)
       SET @lstr_tempstring = ''
      --------
      
@@ -400,7 +375,15 @@ AS
       DECLARE @ldtm_tempdate datetime
       set @ldtm_tempdate = NULL
       ------------
-     
+      DECLARE @lstr_message VARCHAR(100)
+      
+      --SELECT  * FROM #BlockTable
+      --SELECT * FROM  #TimeMarks
+       --     SELECT * FROM  #CraneList
+        --          SELECT * FROM #TimeMarkCraneG
+    -- select * from #ContainersTable return 0 
+            SET @lint_cranecountfound = 0
+      
  	  -- cursor por bloques 
 	       DECLARE blockcur  CURSOR FOR  
                   SELECT strBlock , intCountCont
@@ -420,6 +403,8 @@ AS
                    -- ciclo del cursor 
                    WHILE ( @@sqlstatus = 0 )
                           begin
+                          SET @lstr_message = '399- INCIA CURSOR BK='+ @lstr_blockId+ CONVERT(VARCHAR(5),@lint_CountContIdx)
+                          PRINT @lstr_message
 		  					    -- si el bloque contiene cantidad mayor
 		  					   -- IF (@lint_CountContIdx >=  @lint_mincontfblock )		  					    
 		  					    IF (@lint_CountContIdx >=  1 )		  					    
@@ -477,7 +462,7 @@ AS
 							         	  
 				         				-- incializa indice de contandor
 				         				  SET @lint_orderinblock =0
-				         				  SET @lint_whileidx = 0 
+				         				  SET @lint_whileidx = 1
 				         				  
 				         				-- generar contador disponible conteneodes sin marcar
 				         				    SELECT @lint_pendingconts  = COUNT(strContainer  )
@@ -488,6 +473,8 @@ AS
 							         					---- un ciclo donde se este revisando el sieuinge contenedor , mientras contador de  disponible sea mayor a 0 y contador de iteracion menor que elilimte 
 							         					WHILE ( ( @lint_pendingconts>0 ) AND ( @lint_whileidx < @lint_whiletop )  )
 							         					BEGIN
+							         					 --SET @lstr_message = '469- INCIA CICLO PCONT=' + CONVERT(VARCHAR(5),@lint_pendingconts) +'WHILEID='+CONVERT(VARCHAR(5),@lint_whileidx)+'TOP'+CONVERT(VARCHAR(5),@lint_whiletop)
+							         					-- PRINT @lstr_message
 								         					 -- obtener el contenedor con bloque, renglon, bahia 
 								         					 	SELECT  @lstr_containerFound = MIN (strContainer )
 								         					 	FROM #ContainersTable
@@ -514,11 +501,32 @@ AS
 								         					        	---- tabla de cantidad de gruas por tiempo 
 								         					        	DELETE #TimeMarkCraneG
 								         					        	
-								         					        	INSERT INTO #TimeMarkCraneG(intMarkTime ,intCountCranes  )
-								         					        	SELECT intMarkTime ,COUNT(intCrane )
+								         					        	INSERT INTO #TimeMarkCraneG(intMarkTime ,intCountCranes, intCrane  )
+								         					        	SELECT intMarkTime,0 ,intCrane
 								         					        	FROM  #ContainersTable
-								         					        	GROUP BY intMarkTime
+								         					        	where intMarkTime >0
+								         					        	and intCrane > 0 
+								         					        	GROUP BY intMarkTime,intCrane
 								         					        	
+								         					        	UPDATE #TimeMarkCraneG
+								         					        	SET #TimeMarkCraneG.intCountCranes= (SELECT COUNT(SCRANE.intCrane)
+								         					        	                                     FROM #TimeMarkCraneG SCRANE
+								         					        	                                     WHERE SCRANE.intMarkTime = #TimeMarkCraneG.intMarkTime
+								         					        	                                     --GROUP BY SCRANE.intMarkTime
+
+								         					        	                                    )
+								         					        	
+								         					        	/*if exists ( select intCountCranes
+								         					        	            from #TimeMarkCraneG
+								         					        	            where #TimeMarkCraneG.intCountCranes > 1
+								         					        	            )
+								         					        	            begin
+								         					        	             select  *
+								         					        	             from #TimeMarkCraneG
+								         					        	             
+								         					        	             return 0 
+								         					        	            end 
+								         					        	*/
 								         					        	
 								         					        	SELECT  @lint_FoundMarkTime =  MIN(intMarkTime)
 								         					        	FROM #TimeMarkCraneG
@@ -526,20 +534,83 @@ AS
 								         					        	
 								         					        	SET @lint_FoundMarkTime = ISNULL(@lint_FoundMarkTime,0)
 								         					        	
+								         					        	SET @lstr_message = '509-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
+								         					        	PRINT @lstr_message
 								         					       -- si no hay hora
 								         					        IF (@lint_FoundMarkTime =0)
 								         					        BEGIN
-								         					        
-								         					           --empezar desde el indice de tiempo 0 
-								         					            SET @lint_FoundMarkTime = 1
+								         					            set @lint_tempint = 0
+								         					           -- obtener la maxima cantidad de tiempo , si no hay ,ponerla en 1
+								         					            SELECT @lint_tempint = MAX( #ContainersTable.intMarkTime  ) 
+								         					            FROM #ContainersTable
 								         					            
+								         					           -- si hay maxima cAntIdad, sumarle 1
+								         					           IF ( @lint_tempint > 0)
+								         					             BEGIN
+								         					               SET  @lint_FoundMarkTime  = @lint_tempint  +1
+								         					               -- es nuevo tiempo 
+								         					                 -- obtener la ultima grua usada en el anterior tiempo
+								         					                 SET @lint_tempint =0 
+								         					                  SELECT @lint_tempint= MAX(intCrane )
+								         					                  FROM #ContainersTable
+								         					                  WHERE  #ContainersTable.intMarkTime =  @lint_tempint
+								         					                  
+								         					                   -- la nueva grua sera la ulitama usada +1
+								         					                   SET @lint_cranecountfound = @lint_tempint +1
+								         					                    -- si la nueva grua es mayor que la cantidad, empezar en 1
+								         					                    IF ( @lint_cranecountfound > @intQtyCrane)
+								         					                     BEGIN 
+								         					                      SET @lint_cranecountfound=1
+								         					                     END 
+								         					             END
+								         					           ELSE
+								         					            BEGIN -- sino								         					            	  								         					             
+									         					           --empezar desde el indice de tiempo 0 
+									         					            SET @lint_FoundMarkTime = 1
+								         					            END 
+								         					          -- fin si no lo encontro		
+									         					      
+								         					        END -- IF (@lint_FoundMarkTime =0)   
+								         					        
+								         					              SET @lstr_message = '560-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
+								         					        	PRINT @lstr_message
+								         					        	
+								         					        	SET  @lint_tempint =0
 									         					       -- ver si existen gruas en ese tiempo
-									         					        SELECT @lint_cranecountfound = COUNT(intCrane )
-									         					        FROM  #ContainersTable
-									         					        WHERE #ContainersTable.intMarkTime =@lint_FoundMarkTime
+									         					        SELECT  @lint_tempint = COUNT(intCountCranes )
+									         					        FROM  #TimeMarkCraneG
+									         					        WHERE #TimeMarkCraneG.intMarkTime =@lint_FoundMarkTime
 									         					        
-									         					        SET @lint_cranecountfound =ISNULL(@lint_cranecountfound,0)
+									         					        SET  @lint_tempint =ISNULL( @lint_tempint,0)
 									         					        
+									         					        -- si la cantidad de gruas es menor que las disponibles 
+									         					         IF ( @lint_tempint < @intQtyCrane )
+									         					         BEGIN
+									         					            -- obtner la ultima grua y sumarle 1
+									         					            SELECT @lint_tempint = MAX(intCrane  )
+									         					            FROM #ContainersTable
+									         					            WHERE #ContainersTable.intMarkTime =@lint_FoundMarkTime
+									         					            									         					            
+									         					            -- si la grua es mayor a limite, empezar en 1
+									         					            SET @lint_tempint = @lint_tempint +1
+									         					            
+									         					            IF ( @lint_tempint > @intQtyCrane)
+									         					         	   BEGIN
+										         					              SET @lint_cranecountfound =1
+										         					            END
+									         					            ELSE
+									         					             BEGIN
+									         					               SET @lint_cranecountfound= @lint_tempint
+									         					             END
+									         					            
+
+									         					         END --IF ( @lint_tempint > @intQtyCrane )
+									         					         
+									         					        --??? si no hay gruas en esa hora, empezar en 1 
+									         					        
+									         					        SET @lstr_message = '528-BK='+@lstr_blockId +'- concrane='+convert(varchar(5),@lint_cranecountfound)
+								         					        	PRINT @lstr_message
+								         					        	/*
 									         					         -- si existen gruas 
 									         					         IF ( @lint_cranecountfound >0)
 									         					         	BEGIN
@@ -548,6 +619,10 @@ AS
 										         					          FROM #ContainersTable
 										         					          WHERE #ContainersTable.intMarkTime =@lint_FoundMarkTime
 										         					          
+										         					          
+										         					          SET @lstr_message = '540-BK='+@lstr_blockId +'- max='+convert(varchar(5),@lint_cranecountfound)
+										         					          PRINT @lstr_message
+
 										         					          SELECT @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
 										         					          SET @lint_cranecountfound = @lint_cranecountfound +1
 										         					          
@@ -594,10 +669,8 @@ AS
 
 										         					       END  -- ELSE -- IF ( @lint_cranecountfound >0)
 										         					         ------									         					      
-										         					       
-									         					      -- fin si no lo encontro		
-									         					      
-								         					        END -- IF (@lint_FoundMarkTime =0)      					  
+										         					       */
+									         					     					  
 								         					  
 								         					              
 								         					  --
@@ -610,15 +683,20 @@ AS
 								         					        WHERE  #ContainersTable.intMarkTime   = @lint_FoundMarkTime 
 								         					        AND  strBlock =  @lstr_blockId
 								         					        
-								         					        IF ( @lint_countcont >@intQtyPerHour)
+								         					        IF ( @lint_countcont >=@intQtyPerHour)
 								         					        BEGIN 
 								         					          SET  @lint_FoundMarkTime = @lint_FoundMarkTime +1 
+								         					          
+								         					          SET @lstr_message = '629- NUEVA MARKA TIEMPO Mk='+ CONVERT(VARCHAR(3),@lint_FoundMarkTime )  +'BLK='+@lstr_blockId+'CRAN='+ CONVERT(VARCHAR(3),@lint_cranecountfound )  
+								         					          PRINT @lstr_message
+								         					          
 								         					        END  --IF ( @lint_countcont >@intQtyPerHour)
 
 								         					        
 								         					  END  -- ELSE IF (@lint_FoundMarkTime=0)
-								         					  -- fin si encontro la marca de tiempo								         					 
-
+								         					  -- fin si encontro la marca de tiempo									         					  
+								         					  							         					 
+                                                                SET @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
 								         					    -- si no hay  grua 
 								         					    IF ( @lint_cranecountfound =0)
 								         					    BEGIN
@@ -680,7 +758,7 @@ AS
 								         					    SELECT @lstr_tempstring =  strCraneval 
 								         					    FROM   #ContainersTable
 								         					    WHERE @lstr_containerFound = strContainer
-								         					   SET  strCraneval = ISNULL( strCraneval ,'')
+								         					   SET  @lstr_tempstring = ISNULL( @lstr_tempstring ,'')
 								         					   
 								         					    IF ( LEN(@lstr_tempstring) <=2) -- SI NO HAY MARCA
 								         					    BEGIN
@@ -708,10 +786,11 @@ AS
 								         					     
 								         					    -- si hay contenedores en la visita de otros bloques, ponerles una marca en comentario, en strCraneval 
 								         					     UPDATE #ContainersTable
-								         					     SET strCraneval  = 'BLOQUE_ID='+ @lstr_blockId
+								         					     SET strCraneval  = 'B='+ @lstr_blockId
 								         					     WHERE #ContainersTable.intVisitId =  @lint_tempint
 								         					     AND  #ContainersTable.strContainer <> @lstr_containerFound
 								         					     AND   strBlock <>  @lstr_blockId
+								         					     AND  ISNULL(strCraneval,'')=''
 								         					  
 								         					  SET @lstr_tempstring =''
 								         					     
@@ -795,7 +874,7 @@ AS
 												         					      SET @lstr_BAYMIN =ISNULL( @lstr_BAYMIN,'X')
 												         					      
 												         					      -- si existe ya sea la bahia menor o mayor evaluar 
-												         					      IF ( @lstr_BAYMIN <>'' AND @lstr_BAYMIN<>'X') OR (@lstr_BAYMAX<>'' AND @lstr_BAYMAX<>'X') )
+												         					      IF( ( @lstr_BAYMIN <>'' AND @lstr_BAYMIN<>'X') OR (@lstr_BAYMAX<>'' AND @lstr_BAYMAX<>'X') )
 												         					      BEGIN
 												         					             SET @lint_countcont =0
 														         					      -- obtener la cantidad de contenedores la bahia menor
@@ -827,7 +906,7 @@ AS
 														         					     ELSE														         					      	
 															         					     BEGIN
 															         					          -- indicar que la proxima bahia sera la mayor	
-															         					          @lstr_CurrentBAY  = @lstr_BAYMAX 
+															         					         SET @lstr_CurrentBAY  = @lstr_BAYMAX 
 															         					      
 															         					      END  --ELSE--IF ( @lint_countcont >=@lint_tempint)  -- si la cantidad de la bahia menor es mayor o igual que el de la mayor
 															         					     	
@@ -872,20 +951,31 @@ AS
 
 							         					  -- incrementar la cantida de iteraciones 
 							         					  SET @lint_whileidx = @lint_whileidx +1 
-							         					  
+
+							                              --SET @lstr_message = '856- FIN CICLO PCONT=' + CONVERT(VARCHAR(5),@lint_pendingconts) +'WHILEID='+CONVERT(VARCHAR(5),@lint_whileidx)+'TOP'+CONVERT(VARCHAR(5),@lint_whiletop)
+							                             -- PRINT @lstr_message
+							                         -- SALIR PRIMERA ITERACION
+							                         
+							                        -- SELECT * FROM  #ContainersTable ORDER BY intOrderId  DESC 
+							                         -- RETURN 0      					  
 													    --- fin ciclo revisando , 
 													 END --WHILE ( ( @lint_pendingconts>0 ) AND ( @lint_whileidx < @lint_whiletop )  )
 													    
 									END-- IF (@lint_CountContIdx >=  @lint_mincontfblock )
 									
-								ELSE -- IF (@lint_CountContIdx >=  @lint_mincontfblock )
+								--ELSE -- IF (@lint_CountContIdx >=  @lint_mincontfblock )
 								-- IF (@lint_CountContIdx >=  1)
 									--BEGIN
 								      -- sino , marcar el bloque con reacomodo, marcar los contenedores con reacomovdo segun la variable de marcacion 								      
 								--    END  --ELSE -- IF (@lint_CountContIdx >=  @lint_mincontfblock )							      
-								    
+						   
 							   FETCH  blockcur INTO @lstr_blockId ,  @lint_CountContIdx
-
+							   
+							   SET @lstr_message = '875- VUELTA CURSOR BK='+ @lstr_blockId+ ' COUNT='+ CONVERT(VARCHAR(5),@lint_CountContIdx)
+							   PRINT @lstr_message
+							   -- SELECT * FROM  #ContainersTable ORDER BY intOrderId  ASC
+							   --RETURN 0
+							   
                           end 
                         -- fin ciclo cursor
                    CLOSE blockcur
@@ -894,12 +984,13 @@ AS
 	
 	  --- fin cursor bloques 
 	  -- retornar tabla resultados 
-	  SELECT * FROM  #BlockTable
+	  SELECT * FROM  #ContainersTable ORDER BY strBlock ,intOrderId  ASC 
   
         DROP TABLE #BlockTable
         DROP TABLE #ContainersTable
         DROP TABLE #TimeMarks
-        DROP TABLE 
+        DROP TABLE #CraneList
+        DROP TABLE #TimeMarkCraneG
         
 	          
 	    END -- IF (@intMode  =1)
