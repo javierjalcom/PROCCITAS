@@ -120,7 +120,9 @@ AS
 			    dateTimeMark  DATETIME NULL,
 			    intCrane INT NULL,
 			    strCraneval VARCHAR(10) NULL,
-			    intOrderId INT NULL
+			    intOrderId INT NULL ,
+			    intGenOrder INT NULL,
+			    intGblok INT NULL
 			   )
 	
     -- tabla de blqoues
@@ -369,7 +371,13 @@ AS
       DECLARE @lstr_tempstring varchar(20)
       SET @lstr_tempstring = ''
      --------
+     -- secuendia general
+     DECLARE @lint_GeneralOrder INT
+     SET @lint_GeneralOrder = 0
      
+     -- contador de bloques
+     DECLARE @lint_GBlockC INT
+     SET @lint_GBlockC = 0
      
       -- temporal fecha
       DECLARE @ldtm_tempdate datetime
@@ -396,14 +404,15 @@ AS
                    
                    -- leer el cursor 
                    FETCH  blockcur INTO @lstr_blockId ,  @lint_CountContIdx
+                   --
+                   SET @lint_GBlockC  = @lint_GBlockC  +1 
                    
-     
                    -- PRINT 'inicio cursor'
                    --
                    -- ciclo del cursor 
                    WHILE ( @@sqlstatus = 0 )
                           begin
-                          SET @lstr_message = '399- INCIA CURSOR BK='+ @lstr_blockId+ CONVERT(VARCHAR(5),@lint_CountContIdx)
+                          SET @lstr_message = '406- INCIA CURSOR BK='+ @lstr_blockId+ CONVERT(VARCHAR(5),@lint_CountContIdx)
                           PRINT @lstr_message
 		  					    -- si el bloque contiene cantidad mayor
 		  					   -- IF (@lint_CountContIdx >=  @lint_mincontfblock )		  					    
@@ -473,7 +482,7 @@ AS
 							         					---- un ciclo donde se este revisando el sieuinge contenedor , mientras contador de  disponible sea mayor a 0 y contador de iteracion menor que elilimte 
 							         					WHILE ( ( @lint_pendingconts>0 ) AND ( @lint_whileidx < @lint_whiletop )  )
 							         					BEGIN
-							         					 --SET @lstr_message = '469- INCIA CICLO PCONT=' + CONVERT(VARCHAR(5),@lint_pendingconts) +'WHILEID='+CONVERT(VARCHAR(5),@lint_whileidx)+'TOP'+CONVERT(VARCHAR(5),@lint_whiletop)
+							         					 --SET @lstr_message = '476- INCIA CICLO PCONT=' + CONVERT(VARCHAR(5),@lint_pendingconts) +'WHILEID='+CONVERT(VARCHAR(5),@lint_whileidx)+'TOP'+CONVERT(VARCHAR(5),@lint_whiletop)
 							         					-- PRINT @lstr_message
 								         					 -- obtener el contenedor con bloque, renglon, bahia 
 								         					 	SELECT  @lstr_containerFound = MIN (strContainer )
@@ -534,7 +543,7 @@ AS
 								         					        	
 								         					        	SET @lint_FoundMarkTime = ISNULL(@lint_FoundMarkTime,0)
 								         					        	
-								         					        	SET @lstr_message = '509-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
+								         					        	SET @lstr_message = '537-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
 								         					        	PRINT @lstr_message
 								         					       -- si no hay hora
 								         					        IF (@lint_FoundMarkTime =0)
@@ -572,7 +581,7 @@ AS
 									         					      
 								         					        END -- IF (@lint_FoundMarkTime =0)   
 								         					        
-								         					              SET @lstr_message = '560-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
+								         					              SET @lstr_message = '576-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
 								         					        	PRINT @lstr_message
 								         					        	
 								         					        	SET  @lint_tempint =0
@@ -608,70 +617,8 @@ AS
 									         					         
 									         					        --??? si no hay gruas en esa hora, empezar en 1 
 									         					        
-									         					        SET @lstr_message = '528-BK='+@lstr_blockId +'- concrane='+convert(varchar(5),@lint_cranecountfound)
+									         					        SET @lstr_message = '611-BK='+@lstr_blockId +'- concrane='+convert(varchar(5),@lint_cranecountfound)
 								         					        	PRINT @lstr_message
-								         					        	/*
-									         					         -- si existen gruas 
-									         					         IF ( @lint_cranecountfound >0)
-									         					         	BEGIN
-										         					          -- obtener la grua con el indice mayor, y sumarle 1 al inidice
-										         					          SELECT @lint_cranecountfound = MAX( intCrane)
-										         					          FROM #ContainersTable
-										         					          WHERE #ContainersTable.intMarkTime =@lint_FoundMarkTime
-										         					          
-										         					          
-										         					          SET @lstr_message = '540-BK='+@lstr_blockId +'- max='+convert(varchar(5),@lint_cranecountfound)
-										         					          PRINT @lstr_message
-
-										         					          SELECT @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
-										         					          SET @lint_cranecountfound = @lint_cranecountfound +1
-										         					          
-										         					          -- si el inidice se ha superado, iniciar en inidice 1 
-										         					          IF ( @lint_cranecountfound > @intQtyCrane)
-										         					          BEGIN
-										         					             SET @lint_cranecountfound =1
-										         					          END
-										         					       END -- IF ( @lint_cranecountfound >0)
-										         					       ELSE 
-										         					       BEGIN
-										         					       	-- si no existen gruas 
-										         					            
-										         					            SELECT  @lint_FoundMarkTime = MAX(intMarkTime )
-										         					            FROM #ContainersTable
-										         					           WHERE  strBlock =  @lstr_blockId
-										         					           
-										         					           -- obtener la ultima grua usada en el bloque 
-										         					           SELECT @lint_cranecountfound =  MAX(intCrane ) 
-										         					           FROM #ContainersTable
-										         					           WHERE  strBlock =  @lstr_blockId
-										         					           AND intMarkTime = @lint_FoundMarkTime
-										         					           
-										         					           SET @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
-										         					           
-										         					             -- si no hay la ultima grua usada en el bloque
-										         					             IF (@lint_cranecountfound =0)
-										         					             BEGIN
-										         					               -- obtener la ultima grua usada en general,										         					                  
-										         					                    SELECT @lint_cranecountfound =  MAX(intCrane ) 
-										         					                    FROM #ContainersTable
-										         					                    WHERE   intMarkTime = @lint_FoundMarkTime 
-										         					                  
-										         					                -- usar el indice siguiente de la siguiente grua, si se llego al indice limite , usar el indice 1  
-										         					                   IF (@lint_cranecountfound >=  @intQtyCrane)
-										         					                   BEGIN 
-										         					                     SET @lint_cranecountfound = 1 
-										         					                   END 
-										         					                   
-										         					             END   --IF (@lint_cranecountfound =0)
-										         					             -- fin si no hau la ultima usada en el bloque 								         					           
-										         					            
-										         					         -- fin si no existen gruas 
-
-										         					       END  -- ELSE -- IF ( @lint_cranecountfound >0)
-										         					         ------									         					      
-										         					       */
-									         					     					  
-								         					  
 								         					              
 								         					  --
 								         					  END --  IF (@lint_FoundMarkTime=0)
@@ -740,7 +687,7 @@ AS
 								         					   WHERE intMarkTime=@lint_FoundMarkTime 
 								         					 
 								         					 ---- marcar, como orden 	         	
-								         					 									         					 			 
+								         					 		SET  @lint_GeneralOrder =  @lint_GeneralOrder +1 							         					 			 
 								         					 -- marcar la tabla con el contenedor , en la marca de tiempo y grua ,
 								         					 UPDATE #ContainersTable
 								         					 SET #ContainersTable.intOrderId =@lint_orderinblock
@@ -748,6 +695,8 @@ AS
 								         					    ,strTime  = strTime 
 								         					    ,dateTimeMark=@ldtm_tempdate
 								         					    ,intCrane = @lint_cranecountfound
+								         					    ,intGblok   = @lint_GBlockC
+								         					    ,intGenOrder  = @lint_GeneralOrder
 								         					 WHERE @lstr_containerFound = strContainer
 								         					 AND ISNULL( #ContainersTable.intOrderId,0) =0
 								         					 
@@ -971,7 +920,9 @@ AS
 						   
 							   FETCH  blockcur INTO @lstr_blockId ,  @lint_CountContIdx
 							   
-							   SET @lstr_message = '875- VUELTA CURSOR BK='+ @lstr_blockId+ ' COUNT='+ CONVERT(VARCHAR(5),@lint_CountContIdx)
+							      SET @lint_GBlockC  = @lint_GBlockC  +1 
+							      
+							   SET @lstr_message = '912- VUELTA CURSOR BK='+ @lstr_blockId+ ' COUNT='+ CONVERT(VARCHAR(5),@lint_CountContIdx)
 							   PRINT @lstr_message
 							   -- SELECT * FROM  #ContainersTable ORDER BY intOrderId  ASC
 							   --RETURN 0
@@ -983,9 +934,18 @@ AS
                    ------
 	
 	  --- fin cursor bloques 
-	  -- retornar tabla resultados 
-	  SELECT * FROM  #ContainersTable ORDER BY strBlock ,intOrderId  ASC 
-  
+       -- retornar agrupado
+       SELECT strBlock , dateTimeMark  , intCrane , intGblok, COUNT(strContainer  )       
+       FROM #ContainersTable
+       GROUP BY strBlock , dateTimeMark  , intCrane,intGblok 
+       ORDER BY intGblok  ASC
+       
+       	  -- retornar tabla resultados 
+	  SELECT * FROM  #ContainersTable ORDER BY intGenOrder ASC 
+      --
+
+       
+      ---
         DROP TABLE #BlockTable
         DROP TABLE #ContainersTable
         DROP TABLE #TimeMarks
