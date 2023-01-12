@@ -1,4 +1,3 @@
-
 /*
 	DROP PROCEDURE spSetAppointOnTime
 	--
@@ -686,8 +685,12 @@ AS
 								         					   FROM #TimeMarks
 								         					   WHERE intMarkTime=@lint_FoundMarkTime 
 								         					 
-								         					 ---- marcar, como orden 	         	
-								         					 		SET  @lint_GeneralOrder =  @lint_GeneralOrder +1 							         					 			 
+								         					 ---- obtener el orden general	         	
+								         					 		SELECT  @lint_GeneralOrder = MAX(intGenOrder)
+								         					 		FROM #ContainersTable
+								         					 		SET  @lint_GeneralOrder =  ISNULL(@lint_GeneralOrder,0)
+								         					 		SET  @lint_GeneralOrder =  @lint_GeneralOrder +1 	
+								         					 								         					 			 
 								         					 -- marcar la tabla con el contenedor , en la marca de tiempo y grua ,
 								         					 UPDATE #ContainersTable
 								         					 SET #ContainersTable.intOrderId =@lint_orderinblock
@@ -938,10 +941,10 @@ AS
        SELECT strBlock , dateTimeMark  , intCrane , intGblok, COUNT(strContainer  )       
        FROM #ContainersTable
        GROUP BY strBlock , dateTimeMark  , intCrane,intGblok 
-       ORDER BY intGblok  ASC
+       ORDER BY intGblok,dateTimeMark  ASC
        
        	  -- retornar tabla resultados 
-	  SELECT * FROM  #ContainersTable ORDER BY intGenOrder ASC 
+	  /* Adaptive Server has expanded all '*' elements in the following statement */ SELECT #ContainersTable.intUniversalId, #ContainersTable.strContainer, #ContainersTable.intVisitId, #ContainersTable.intItem, #ContainersTable.strPosition, #ContainersTable.strBlock, #ContainersTable.strBay, #ContainersTable.strRow, #ContainersTable.strStow, #ContainersTable.intMarkTime, #ContainersTable.strTime, #ContainersTable.dateTimeMark, #ContainersTable.intCrane, #ContainersTable.strCraneval, #ContainersTable.intOrderId, #ContainersTable.intGenOrder, #ContainersTable.intGblok FROM  #ContainersTable ORDER BY intGenOrder ASC 
       --
 
        
