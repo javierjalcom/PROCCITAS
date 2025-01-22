@@ -258,7 +258,17 @@ AS
           SET #ContainersTable.strBlock = UPPER(#ContainersTable.strBlock)
          
          -- 
+          -- si hay contenedores con posicion de 2 letras , y no tienen bloque , ponerle la posicion como bloque 
+           UPDATE #ContainersTable
+           SET #ContainersTable..strBlock = SUBSTRING(#ContainersTable.strPosition,1,2)
+           WHERE
+                     ( ISNULL(#ContainersTable.strBlock,'X') ='X'
+                      and ISNULL(#ContainersTable.strPosition,'X') <>'X'
+                      AND LEN(#ContainersTable.strPosition)>1
 
+                     ) 
+           
+          ---
   		-- si agrupar por bloques 
 		     INSERT INTO   #BlockTable
 					  (               
@@ -412,7 +422,7 @@ AS
                    WHILE ( @@sqlstatus = 0 )
                           begin
                           SET @lstr_message = '406- INCIA CURSOR BK='+ @lstr_blockId+ CONVERT(VARCHAR(5),@lint_CountContIdx)
-                          PRINT @lstr_message
+                          --PRINT @lstr_message
 		  					    -- si el bloque contiene cantidad mayor
 		  					   -- IF (@lint_CountContIdx >=  @lint_mincontfblock )		  					    
 		  					    IF (@lint_CountContIdx >=  1 )		  					    
@@ -435,26 +445,29 @@ AS
 							         	    
 							         	    SET @lstr_BAYMIN= ISNULL(@lstr_BAYMIN,'')
 							         	    SET @lstr_CurrentBAY=@lstr_BAYMIN
-	
-							         	-- obtener el nivel maximo,  sin marcar
-							         	    SELECT  @lstr_stowMAX  =  MAX(strStow  )
-							         	     FROM #ContainersTable
-							         	    WHERE strBlock =  @lstr_blockId
-							         	    AND ISNULL(intOrderId ,0) =0
-							         	    AND strBay = @lstr_CurrentBAY
 							         	    
-							         	    SET  @lstr_CurrentStow = @lstr_stowMAX
-							         	-- obtener el menor row,con nivel maximo y el renglon-bay escogido sin marcar 
+							         	    
+							         	-- obtener el menor row,y el renglon-bay escogido sin marcar 
 
 							         	     SELECT  @lstr_rowMIN   =MIN(strRow )
 							         	     FROM #ContainersTable
 							         	    WHERE strBlock =  @lstr_blockId
 							         	    AND ISNULL(intOrderId ,0) =0
 							         	    AND strBay = @lstr_CurrentBAY
-							         	    AND @lstr_stowMAX = strStow 
+							         	    --AND @lstr_stowMAX = strStow 
 							         	    
 							         	    SET @lstr_CurrentRow  = @lstr_rowMIN
 
+	
+							         	-- obtener el nivel maximo, , del menor row,  sin marcar
+							         	    SELECT  @lstr_stowMAX  =  MAX(strStow  )
+							         	     FROM #ContainersTable
+							         	    WHERE strBlock =  @lstr_blockId
+							         	    AND ISNULL(intOrderId ,0) =0
+							         	    AND strBay = @lstr_CurrentBAY
+							         	    and strRow = @lstr_rowMIN
+							         	    
+							         	    SET  @lstr_CurrentStow = @lstr_stowMAX
 							         	    
 							         	-- obtener los contenedores del bloque sin marcar 
 							         	SELECT  @lstr_containerFound = MIN (strContainer )
@@ -491,6 +504,9 @@ AS
 								         					 	 AND @lstr_CurrentBAY = strBay 
 								         					 	 AND @lstr_stowMAX = strStow 
 								         					 	 AND @lstr_rowMIN  = strRow
+								         					 	 
+								         					SET @lstr_message = '498-BLOCK=' + @lstr_blockId +'BAY='+@lstr_CurrentBAY+'ROW='+@lstr_rowMIN + 'STOW='+@lstr_stowMAX + '-CONT='+@lstr_containerFound
+							         					   --  PRINT @lstr_message
 
 								         					 
 								         					 -- obtener la ultima marca de tiempo ,para el bloque y la grua , 
@@ -543,7 +559,7 @@ AS
 								         					        	SET @lint_FoundMarkTime = ISNULL(@lint_FoundMarkTime,0)
 								         					        	
 								         					        	SET @lstr_message = '537-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
-								         					        	PRINT @lstr_message
+								         					        	--PRINT @lstr_message
 								         					       -- si no hay hora
 								         					        IF (@lint_FoundMarkTime =0)
 								         					        BEGIN
@@ -555,21 +571,7 @@ AS
 								         					           -- si hay maxima cAntIdad, sumarle 1
 								         					           IF ( @lint_tempint > 0)
 								         					             BEGIN
-								         					               SET  @lint_FoundMarkTime  = @lint_tempint  +1
-								         					               -- es nuevo tiempo 
-								         					                 -- obtener la ultima grua usada en el anterior tiempo
-								         					                 SET @lint_tempint =0 
-								         					                  SELECT @lint_tempint= MAX(intCrane )
-								         					                  FROM #ContainersTable
-								         					                  WHERE  #ContainersTable.intMarkTime =  @lint_tempint
-								         					                  
-								         					                   -- la nueva grua sera la ulitama usada +1
-								         					                   SET @lint_cranecountfound = @lint_tempint +1
-								         					                    -- si la nueva grua es mayor que la cantidad, empezar en 1
-								         					                    IF ( @lint_cranecountfound > @intQtyCrane)
-								         					                     BEGIN 
-								         					                      SET @lint_cranecountfound=1
-								         					                     END 
+								         					               SET @lint_cranecountfound=1								         					                     
 								         					             END
 								         					           ELSE
 								         					            BEGIN -- sino								         					            	  								         					             
@@ -581,7 +583,7 @@ AS
 								         					        END -- IF (@lint_FoundMarkTime =0)   
 								         					        
 								         					              SET @lstr_message = '576-BK='+@lstr_blockId +'- T='+convert(varchar(5),@lint_FoundMarkTime)
-								         					        	PRINT @lstr_message
+								         					        	--PRINT @lstr_message
 								         					        	
 								         					        	SET  @lint_tempint =0
 									         					       -- ver si existen gruas en ese tiempo
@@ -604,20 +606,44 @@ AS
 									         					            
 									         					            IF ( @lint_tempint > @intQtyCrane)
 									         					         	   BEGIN
-										         					              SET @lint_cranecountfound =1
-										         					            END
+									         					         	     --
+									         					         	     --   SET  @lint_FoundMarkTime  = @lint_tempint  +1
+										         					             -- es nuevo tiempo 
+										         					                 -- obtener la ultima grua usada en el anterior tiempo
+										         					                 --SET @lint_tempint =0 
+										         					                --  SELECT @lint_tempint= MAX(intCrane )
+										         					                --  FROM #ContainersTable
+										         					                --  WHERE  #ContainersTable.intMarkTime  =  @lint_tempint
+										         					                  
+										         					                   -- la nueva grua sera la ulitama usada +1
+										         					                 --  SET @lint_cranecountfound = @lint_tempint +1
+										         					                    -- si la nueva grua es mayor que la cantidad, empezar en 1
+										         					                   -- IF ( @lint_cranecountfound > @intQtyCrane)
+										         					                    -- BEGIN 
+										         					                      -- incializar busqueda  
+										         					                       SET @lint_cranecountfound=0
+										         					                        --
+										         					                        SELECT @lint_cranecountfound = MIN(intCraneId )
+										         					                        FROM  #CraneList
+										         					                        WHERE  #CraneList.intCraneId  NOT IN (SELECT #TimeMarkCraneG.intCrane 
+										         					                                                              FROM  #TimeMarkCraneG
+										         					                                                              WHERE #TimeMarkCraneG.intMarkTime =  @lint_FoundMarkTime
+										         					                                                             )
+									         					         	     ---
+										         					            -- - SET @lint_cranecountfound =1
+										         					            END --   IF ( @lint_tempint > @intQtyCrane)
 									         					            ELSE
 									         					             BEGIN
 									         					               SET @lint_cranecountfound= @lint_tempint
-									         					             END
-									         					            
+									         					             END -- ELSE --   IF ( @lint_tempint > @intQtyCrane)									         					            
 
-									         					         END --IF ( @lint_tempint > @intQtyCrane )
-									         					         
+									         					         END -- si la cantidad de gruas es menor que las disponibles 
+									         					         -- IF ( @lint_tempint < @intQtyCrane )									         					       
+									         					            
 									         					        --??? si no hay gruas en esa hora, empezar en 1 
 									         					        
 									         					        SET @lstr_message = '611-BK='+@lstr_blockId +'- concrane='+convert(varchar(5),@lint_cranecountfound)
-								         					        	PRINT @lstr_message
+								         					        	--PRINT @lstr_message
 								         					              
 								         					  --
 								         					  END --  IF (@lint_FoundMarkTime=0)
@@ -634,12 +660,14 @@ AS
 								         					          SET  @lint_FoundMarkTime = @lint_FoundMarkTime +1 
 								         					          
 								         					          SET @lstr_message = '629- NUEVA MARKA TIEMPO Mk='+ CONVERT(VARCHAR(3),@lint_FoundMarkTime )  +'BLK='+@lstr_blockId+'CRAN='+ CONVERT(VARCHAR(3),@lint_cranecountfound )  
-								         					          PRINT @lstr_message
+								         					         -- PRINT @lstr_message
 								         					          
 								         					        END  --IF ( @lint_countcont >@intQtyPerHour)
 
 								         					        
 								         					  END  -- ELSE IF (@lint_FoundMarkTime=0)
+								         					  
+								         					  
 								         					  -- fin si encontro la marca de tiempo									         					  
 								         					  							         					 
                                                                 SET @lint_cranecountfound = ISNULL(@lint_cranecountfound,0)
@@ -654,8 +682,24 @@ AS
 								         					 -- si la marca de tiempo es 0, ponerla en 1 
 								         					 IF (@lint_FoundMarkTime =0)
 								         					 BEGIN
-								         					  SET @lint_FoundMarkTime =1 
-								         					 END 
+								         					  --SET @lint_FoundMarkTime =1 
+								         					   -- buscar la hora menor que no este ocuapda 
+								         					   SELECT @lint_FoundMarkTime= MIN(intMarkTime) 
+								         					   FROM #TimeMarks
+								         					   WHERE #TimeMarks.intMarkTime NOT IN (
+								         					                                           SELECT #ContainersTable.intMarkTime
+								         					                                           FROM #ContainersTable
+								         					                                           GROUP BY #ContainersTable.intMarkTime 
+								         					                                       ) 
+								         					   -- sino encontro buscar ultima hora de la tabla 
+								         					   SET @lint_FoundMarkTime =ISNULL( @lint_FoundMarkTime,0)
+								         					   
+								         					     IF ( @lint_FoundMarkTime=0)
+								         					     BEGIN
+								         					             SELECT @lint_FoundMarkTime= MAX(intMarkTime) 
+								         					             FROM #TimeMarks
+								         					     END -- @lint_FoundMarkTime=0
+								         					 END  --	IF (@lint_FoundMarkTime =0)
 								         					 
 								         					 -- definirle el id de orden en el bloque 
 								         					 -- obtener el ulitmo id de orden en el bloque , 
@@ -732,6 +776,7 @@ AS
 								         					  
 								         					    -- ver si el contendor actual hay otros contenedores de visita 								         					    
 								         					     -- obtener la visita 
+								         					     SET @lint_tempint =0
 								         					     SELECT @lint_tempint = #ContainersTable.intVisitId 
 								         					     FROM #ContainersTable
 								         					     WHERE #ContainersTable.strContainer = @lstr_containerFound								         					  
@@ -745,6 +790,7 @@ AS
 								         					     AND  ISNULL(strCraneval,'')=''
 								         					  
 								         					  SET @lstr_tempstring =''
+								         					  SET @lint_tempint =ISNULL( @lint_tempint,0)
 								         					     
 								         					    -- ver si hay contenedores en la visita, pero con el mismo bloque							         					     
 								         					    IF EXISTS ( SELECT strContainer  FROM #ContainersTable
@@ -770,6 +816,11 @@ AS
 									         					            FROM #ContainersTable
 									         					            WHERE  #ContainersTable.strContainer =@lstr_tempstring 
 									         					            
+									         					            SET @lstr_CurrentBAY =  @lstr_BAYMIN
+									         					            
+									         					              SET @lstr_message = '783-VISITA--BLOCK=' + @lstr_blockId +'_BAY='+@lstr_CurrentBAY+'_ROW='+@lstr_rowMIN + 'STOW='+@lstr_stowMAX --+ '-CONT='+@lstr_containerFound
+												         					  --PRINT @lstr_message
+									         					            
 									         					    END -- IF EXISTS ( SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.intVisitId =  @lint_tempint									         					    
 								         					    ELSE  -- si no hay contenedores en la misma visita 
 								         					    BEGIN
@@ -781,24 +832,28 @@ AS
 								         					                   AND   strBlock =  @lstr_blockId
 								         					                   AND  ISNULL(intOrderId ,0)=0
 								         					                 )
-								         					             BEGIN								         					      		
-										         					         -- obtener  el nivel mas alto sin marcar
-										         					         SELECT  @lstr_stowMAX =MAX(strStow )
-										         					         FROM #ContainersTable
-										         					           WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
-								         					                   AND   strBlock =  @lstr_blockId
-								         					                   AND  ISNULL(intOrderId ,0)=0
-										         					         
-										         					         -- obtener el row menor con el nivel mas alto sin marcar 
+								         					             BEGIN			
+								         					             
+								         					                 -- obtener el row menor  sin marcar 
 										         					         SELECT @lstr_rowMIN=MIN(strRow  )
 										         					         FROM #ContainersTable
 										         					           WHERE #ContainersTable.strBay  = @lstr_CurrentBAY
 								         					                   AND   strBlock =  @lstr_blockId
 								         					                   AND  ISNULL(intOrderId ,0)=0
-								         					                   AND  @lstr_stowMAX =strStow 
-								         					               
+								         					                   --AND  @lstr_stowMAX =strStow 
+								         					             					         					      		
+										         					         -- obtener  el nivel mas alto sin marcar, con el row menor
+										         					         SELECT  @lstr_stowMAX =MAX(strStow )
+										         					         FROM #ContainersTable
+										         					           WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+								         					                   AND   strBlock =  @lstr_blockId
+								         					                   AND  ISNULL(intOrderId ,0)=0
+										         					           AND  strRow = @lstr_rowMIN
+										         					       
 
-										         					         
+										         					         	SET @lstr_message = '809-MISMABAY--BLOCK=' + @lstr_blockId +'_BAY='+@lstr_CurrentBAY+'_ROW='+@lstr_rowMIN + 'STOW='+@lstr_stowMAX + '-CONT='+@lstr_containerFound
+										         					         --	PRINT @lstr_message
+										         					         	
 									         					        END --IF EXISTS (  SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
 									         					   ELSE
 									         					    BEGIN ----IF EXISTS (  SELECT strContainer  FROM #ContainersTable WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
@@ -863,21 +918,25 @@ AS
 															         					      END  --ELSE--IF ( @lint_countcont >=@lint_tempint)  -- si la cantidad de la bahia menor es mayor o igual que el de la mayor
 															         					     	
 															         				
-															         				  -- obtener  el nivel mas alto sin marcar
-												         					         SELECT  @lstr_stowMAX =MAX(strStow )
-												         					         FROM #ContainersTable
-												         					           WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
-										         					                   AND   strBlock =  @lstr_blockId
-										         					                   AND  ISNULL(intOrderId ,0)=0
+															         				      -- obtener el row menor  sin marcar 
+															         				      SELECT @lstr_rowMIN=MIN(strRow  )
+															         				      FROM #ContainersTable
+															         				      WHERE #ContainersTable.strBay  = @lstr_CurrentBAY
+															         				      AND   strBlock =  @lstr_blockId
+															         				      AND  ISNULL(intOrderId ,0)=0
+															         				      --AND  @lstr_stowMAX =strStow 	
 										         					                   
+															         				     -- obtener  el nivel mas alto para el row sin marcar
+												         					        	 SELECT  @lstr_stowMAX =MAX(strStow )
+													         					         FROM #ContainersTable
+													         					           WHERE #ContainersTable.strBay  =   @lstr_CurrentBAY
+											         					                   AND   strBlock =  @lstr_blockId
+											         					                   AND  ISNULL(intOrderId ,0)=0
+										         					                       AND  strRow = @lstr_rowMIN
 										         					         
-												         					         -- obtener el row menor con el nivel mas alto sin marcar 
-												         					         SELECT @lstr_rowMIN=MIN(strRow  )
-												         					         FROM #ContainersTable
-												         					           WHERE #ContainersTable.strBay  = @lstr_CurrentBAY
-										         					                   AND   strBlock =  @lstr_blockId
-										         					                   AND  ISNULL(intOrderId ,0)=0
-										         					                   AND  @lstr_stowMAX =strStow 	
+												         					              --
+												         					              SET @lstr_message = '895-DIFMABAY--BLOCK=' + @lstr_blockId +'_BAY='+@lstr_CurrentBAY+'_ROW='+@lstr_rowMIN + 'STOW='+@lstr_stowMAX --+ '-CONT='+@lstr_containerFound
+												         					             -- PRINT @lstr_message
 								         					                   
 												         					     	
 												         					 	   END -- IF ( @lstr_BAYMIN <>'' AND @lstr_BAYMIN<>'X') OR (@lstr_BAYMAX<>'' AND @lstr_BAYMAX<>'X') )
@@ -959,4 +1018,10 @@ AS
 	    END -- IF (@intMode  =1)
     
  END  --END CREATE PROCEDURE spSetAppointOnTime
+
+
+
+
+
+
 
